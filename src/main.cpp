@@ -16,6 +16,7 @@
 #include <ESPAsyncWebServer.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
+#include <ESP8266HTTPClient.h>
 
 const char* ssid     = "ESP8266-Access-Point";
 const char* password = "123456789";
@@ -28,6 +29,10 @@ const char* password = "123456789";
 //#define DHTTYPE    DHT21     // DHT 21 (AM2301)
 
 DHT dht(DHTPIN, DHTTYPE);
+
+String HOST_NAME = "http://10.0.2.15"; // change to your PC's IP address
+String PATH_NAME   = "/insert_temp.php";
+String queryString = "?temperature=";
 
 // current temperature & humidity, updated in loop()
 float t = 0.0;
@@ -121,11 +126,10 @@ void setup(){
   
   Serial.print("Setting AP (Access Point)…");
   // Remove the password parameter, if you want the AP (Access Point) to be open
-  WiFi.softAP(ssid, password);
-
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
+  //WiFi.softAP(ssid, password); //softAP
+  //IPAddress IP = WiFi.softAPIP(); //softAP
+  //Serial.print("AP IP address: "); //softAP
+  //Serial.println(IP); //softAP
 
   // Print ESP8266 Local IP Address
   Serial.println(WiFi.localIP());
@@ -155,6 +159,27 @@ void loop(){
     int light = (int)analogRead(A0);
     Serial.print("Lichtwert ADC: ");
     Serial.println(light);
+    HTTPClient http;
+    http.begin(HOST_NAME + PATH_NAME + queryString + newT); //HTTP
+    int httpCode = http.GET();
+
+  // httpCode will be negative on error
+      if(httpCode > 0) {
+    // file found at server
+        if(httpCode == HTTP_CODE_OK) {
+        String payload = http.getString();
+        Serial.println(payload);
+        } 
+        else {
+      // HTTP header has been send and Server response header has been handled
+          Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+        }
+      } 
+      else {
+        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+      }
+
+      http.end();
     // Read temperature as Fahrenheit (isFahrenheit = true)
     //float newT = dht.readTemperature(true);
     // if temperature read failed, don't change t value

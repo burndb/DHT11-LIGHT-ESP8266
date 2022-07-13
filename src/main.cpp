@@ -187,15 +187,14 @@ void loop(){
   if (currentMillis - previousMillis >= interval) {
     // save the last time you updated the DHT values
     previousMillis = currentMillis;
-    // Read temperature as Celsius (the default)
-    float newT = dht.readTemperature();
+
+    //read and print light value
     int light = (int)analogRead(A0);
     Serial.print("Lichtwert ADC: ");
     Serial.println(light);
-    
-    // Read temperature as Fahrenheit (isFahrenheit = true)
-    //float newT = dht.readTemperature(true);
-    // if temperature read failed, don't change t value
+
+    // Read temperature as Celsius (the default)
+    float newT = dht.readTemperature();
     if (isnan(newT)) {
       Serial.println("Failed to read from DHT sensor!");
     }
@@ -213,5 +212,6 @@ void loop(){
       h = newH;
       Serial.println(h);
     }
+    post_temp();
   }
 }

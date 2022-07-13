@@ -18,8 +18,10 @@
 #include <DHT.h>
 #include <ESP8266HTTPClient.h>
 
-const char* ssid     = "ESP8266-Access-Point";
-const char* password = "123456789";
+const char* ssidap     = "ESP8266-Access-Point";
+const char* passwordap = "123456789";
+const char* ssid = "NETGEAR";
+const char* password = "";
 
 #define DHTPIN D3    // Digital pin connected to the DHT sensor
 
@@ -30,10 +32,11 @@ const char* password = "123456789";
 
 DHT dht(DHTPIN, DHTTYPE);
 
-String HOST_NAME = "http://10.0.2.15"; // change to your PC's IP address
+String HOST_NAME = "http://192.168.211.56"; // change to your PC's IP address
 String PATH_NAME   = "/insert_temp.php";
 String queryString = "?temperature=";
-
+WiFiClient wifiClient;
+HTTPClient http;
 // current temperature & humidity, updated in loop()
 float t = 0.0;
 float h = 0.0;
@@ -46,7 +49,7 @@ AsyncWebServer server(80);
 unsigned long previousMillis = 0;    // will store last time DHT was updated
 
 // Updates DHT readings every 10 seconds
-const long interval = 1000;  
+const long interval = 10000;  
 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
@@ -119,6 +122,30 @@ String processor(const String& var){
   return String();
 }
 
+void post_temp() {
+  http.begin(wifiClient, (HOST_NAME + PATH_NAME + queryString + newT)); //HTTP
+    Serial.print(HOST_NAME + PATH_NAME + queryString + newT);
+    int httpCode = http.GET();
+
+  // httpCode will be negative on error
+      if(httpCode > 0) {
+    // file found at server
+        if(httpCode == HTTP_CODE_OK) {
+        String payload = http.getString();
+        Serial.println(payload);
+        } 
+        else {
+      // HTTP header has been send and Server response header has been handled
+          Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+        }
+      } 
+      else {
+        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+      }
+
+      http.end();
+}
+
 void setup(){
   // Serial port for debugging purposes
   Serial.begin(115200);
@@ -126,11 +153,17 @@ void setup(){
   
   Serial.print("Setting AP (Access Point)…");
   // Remove the password parameter, if you want the AP (Access Point) to be open
-  //WiFi.softAP(ssid, password); //softAP
+  //WiFi.softAP(ssidap, passwordap); //softAP
   //IPAddress IP = WiFi.softAPIP(); //softAP
   //Serial.print("AP IP address: "); //softAP
   //Serial.println(IP); //softAP
 
+  WiFi.begin(ssid);
+  Serial.println("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println(".");
+  }
   // Print ESP8266 Local IP Address
   Serial.println(WiFi.localIP());
 
@@ -159,27 +192,7 @@ void loop(){
     int light = (int)analogRead(A0);
     Serial.print("Lichtwert ADC: ");
     Serial.println(light);
-    HTTPClient http;
-    http.begin(HOST_NAME + PATH_NAME + queryString + newT); //HTTP
-    int httpCode = http.GET();
-
-  // httpCode will be negative on error
-      if(httpCode > 0) {
-    // file found at server
-        if(httpCode == HTTP_CODE_OK) {
-        String payload = http.getString();
-        Serial.println(payload);
-        } 
-        else {
-      // HTTP header has been send and Server response header has been handled
-          Serial.printf("[HTTP] GET... code: %d\n", httpCode);
-        }
-      } 
-      else {
-        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
-      }
-
-      http.end();
+    
     // Read temperature as Fahrenheit (isFahrenheit = true)
     //float newT = dht.readTemperature(true);
     // if temperature read failed, don't change t value

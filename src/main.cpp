@@ -32,7 +32,7 @@ const long interval = 10000;
 
 void post_readings() {
   http.begin(wifiClient, (HOST_NAME + PATH_NAME + queryTemp + t + andOperator + queryHum + h + andOperator + queryLight  + l)); //HTTP
-  Serial.print(HOST_NAME + PATH_NAME + queryTemp + t + andOperator + queryHum + h + andOperator + queryLight  + l);
+  Serial.println(HOST_NAME + PATH_NAME + queryTemp + t + andOperator + queryHum + h + andOperator + queryLight  + l);
   int httpCode = http.GET();
   if(httpCode > 0) {
     // file found at server
@@ -74,7 +74,7 @@ void loop(){
 
     //read and print light value
     l = (int)analogRead(A0);
-    Serial.print("Lichtwert ADC: ");
+    Serial.println("Lichtwert ADC: ");
     Serial.println(l);
 
     // Read temperature as Celsius (the default)
